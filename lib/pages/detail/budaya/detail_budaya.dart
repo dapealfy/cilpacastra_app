@@ -1,24 +1,46 @@
+import 'package:cilpacastra/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 class DetailBudaya extends StatefulWidget {
+  final id;
+  final data;
+  DetailBudaya(this.id, this.data);
   @override
   _DetailBudayaState createState() => _DetailBudayaState();
 }
 
 class _DetailBudayaState extends State<DetailBudaya> {
+  SharedPref sharedPref = SharedPref();
+  var liked = 0;
+  List isi_komentar = [];
+  TextEditingController komentarController = TextEditingController();
+
+  var getKomentar;
+  Future getAllKomentar() async {
+    getKomentar = await sharedPref.read('komentar' + widget.id);
+    setState(() {
+      isi_komentar = getKomentar;
+    });
+  }
+
+  void initState() {
+    getAllKomentar();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Rumah Joglo'),
+        title: Text(widget.data['nama_budaya']),
       ),
       body: Stack(
         children: [
           ListView(
             children: [
               Image.network(
-                'https://i2.wp.com/blog.schneidermans.com/wp-content/uploads/2017/03/brown-and-gray-decorating-in-this-loft-dining-room.jpg?resize=1200%2C1153',
+                widget.data['thumbnail'],
                 width: MediaQuery.of(context).size.width,
                 fit: BoxFit.cover,
               ),
@@ -31,7 +53,9 @@ class _DetailBudayaState extends State<DetailBudaya> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Rumah Joglo',
+                          widget.data['nama_budaya'] +
+                              '\n' +
+                              widget.data['nama_daerah'],
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -40,8 +64,18 @@ class _DetailBudayaState extends State<DetailBudaya> {
                         Row(
                           children: [
                             IconButton(
-                              onPressed: () {},
-                              icon: Icon(Icons.favorite_border),
+                              onPressed: () {
+                                setState(() {
+                                  if (liked == 0) {
+                                    liked = 1;
+                                  } else {
+                                    liked = 0;
+                                  }
+                                });
+                              },
+                              icon: liked == 1
+                                  ? Icon(Icons.favorite, color: Colors.red)
+                                  : Icon(Icons.favorite_border),
                             ),
                             IconButton(
                               onPressed: () {},
@@ -54,8 +88,37 @@ class _DetailBudayaState extends State<DetailBudaya> {
                     SizedBox(height: 10),
                     Container(
                       width: double.infinity,
-                      child: Text(
-                          'Lorem ipsum dolor sit amet uwau kamu keren banget Lorem ipsum dolor sit amet uwau kamu keren banget Lorem ipsum dolor sit amet uwau kamu keren banget '),
+                      child: Text(widget.data['deskripsi']),
+                    ),
+                    SizedBox(height: 10),
+                    Divider(),
+                    SizedBox(height: 10),
+                    Text('Komentar'),
+                    SizedBox(height: 10),
+                    Container(
+                      transform: Matrix4.translationValues(-10, 0, 0),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: isi_komentar.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            leading: Container(
+                              height: 50,
+                              width: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Icon(Feather.user),
+                              ),
+                            ),
+                            title: Text('Daffa Alvi'),
+                            subtitle: Text(isi_komentar[index]),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -73,6 +136,7 @@ class _DetailBudayaState extends State<DetailBudaya> {
               child: Stack(
                 children: [
                   TextFormField(
+                    controller: komentarController,
                     decoration: InputDecoration(
                       labelText: 'Tulis Komentar...',
                     ),
@@ -81,7 +145,11 @@ class _DetailBudayaState extends State<DetailBudaya> {
                     right: 0,
                     child: IconButton(
                       onPressed: () {
-                        //nanti buat ngirim komentar
+                        setState(() {
+                          isi_komentar.add(komentarController.text);
+                          komentarController.clear();
+                          sharedPref.save('komentar' + widget.id, isi_komentar);
+                        });
                       },
                       icon: Icon(Icons.send),
                     ),

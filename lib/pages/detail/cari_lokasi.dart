@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:cilpacastra/pages/detail/budaya/detail_budaya.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:geocoder/geocoder.dart';
 import 'package:geolocator/geolocator.dart';
 // import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -9,6 +12,7 @@ import 'package:latlong/latlong.dart';
 import 'package:line_awesome_icons/line_awesome_icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:user_location/user_location.dart';
+import 'package:http/http.dart' as http;
 
 class LokasiPage extends StatefulWidget {
   @override
@@ -51,6 +55,97 @@ class _LokasiPageState extends State<LokasiPage> {
     });
   }
 
+  // List listDataBudaya = [];
+  // Future<List> _dataBudaya() async {
+  //   var url = "http://cilpacastra.snip-id.com/api/data-budaya";
+  //   final response = await http.get(url, headers: {
+  //     'Accept': 'application/json',
+  //   });
+  //   Map<String, dynamic> _listBudaya;
+
+  //   _listBudaya = json.decode(response.body);
+  //   setState(() {
+  //     listDataBudaya = _listBudaya['data_budaya'];
+  //   });
+  // }
+
+  List markers_ = [];
+  Future<List> _dataBudaya() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    var url = "http://cilpacastra.snip-id.com/api/data-budaya";
+    final response = await http.get(url, headers: {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer ' + prefs.getString('token').toString()
+    });
+    Map<String, dynamic> _markers;
+
+    _markers = json.decode(response.body);
+    setState(() {
+      markers_ = _markers['data_budaya'];
+      var i = 0;
+      if (markers_ != null) {
+        while (i <= markers_.length) {
+          var title = markers_[i]['nama_budaya'];
+          var description = markers_[i]['nama_daerah'];
+          var data = markers_[i];
+          var id = markers_[i]['id'].toString();
+          markers.add(
+            Marker(
+                width: 160.0,
+                height: 130.0,
+                point: LatLng(markers_[i]['lat'], markers_[i]['lng']),
+                builder: (context) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DetailBudaya(id, data)));
+                    },
+                    child: Container(
+                      transform: Matrix4.translationValues(0, -30, 0),
+                      child: Column(
+                        children: <Widget>[
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                Text(title.toString(),
+                                    maxLines: 2,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold)),
+                                Text(description.toString(),
+                                    maxLines: 2,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            FontAwesome.map_marker,
+                            color: Colors.red,
+                            size: 50,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+          );
+          i++;
+        }
+      }
+    });
+  }
+
   _getAddress() async {
     final coordinates =
         Coordinates(controller.center.latitude, controller.center.longitude);
@@ -67,6 +162,7 @@ class _LokasiPageState extends State<LokasiPage> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _dataBudaya();
   }
 
   @override
@@ -81,7 +177,7 @@ class _LokasiPageState extends State<LokasiPage> {
                   ? LatLng(-1.2379255, 116.8528605)
                   : LatLng(
                       _currentPosition.latitude, _currentPosition.longitude),
-              zoom: 15.0,
+              zoom: 10.0,
               plugins: [
                 UserLocationPlugin(),
               ],

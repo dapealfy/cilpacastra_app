@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:cilpacastra/pages/detail/budaya/detail_budaya.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class ListBudaya extends StatefulWidget {
   @override
@@ -7,6 +10,24 @@ class ListBudaya extends StatefulWidget {
 }
 
 class _ListBudayaState extends State<ListBudaya> {
+  List listDataBudaya = [];
+  Future<List> _dataBudaya() async {
+    var url = "http://cilpacastra.snip-id.com/api/data-budaya";
+    final response = await http.get(url, headers: {
+      'Accept': 'application/json',
+    });
+    Map<String, dynamic> _listBudaya;
+
+    _listBudaya = json.decode(response.body);
+    setState(() {
+      listDataBudaya = _listBudaya['data_budaya'];
+    });
+  }
+
+  void initState() {
+    _dataBudaya();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,14 +38,16 @@ class _ListBudayaState extends State<ListBudaya> {
         children: [
           Expanded(
             child: ListView.builder(
-              itemCount: 3,
+              itemCount: listDataBudaya.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => DetailBudaya()));
+                            builder: (context) => DetailBudaya(
+                                listDataBudaya[index]['id'].toString(),
+                                listDataBudaya[index])));
                   },
                   child: Container(
                     margin: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
@@ -53,18 +76,31 @@ class _ListBudayaState extends State<ListBudaya> {
                                   bottomLeft: Radius.circular(10),
                                 ),
                                 child: Image.network(
-                                  'https://i2.wp.com/blog.schneidermans.com/wp-content/uploads/2017/03/brown-and-gray-decorating-in-this-loft-dining-room.jpg?resize=1200%2C1153',
+                                  listDataBudaya[index]['thumbnail'],
                                   fit: BoxFit.cover,
                                 ),
                               ),
                             ),
                             SizedBox(width: 10),
                             Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Nama Budayanya'),
-                                Text(
-                                  'Deskripsi Singkat',
-                                  style: TextStyle(color: Colors.grey),
+                                Container(
+                                  width: 150,
+                                  child: Text(
+                                    listDataBudaya[index]['nama_budaya'],
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Container(
+                                  width: 150,
+                                  child: Text(
+                                    listDataBudaya[index]['deskripsi'],
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
                                 )
                               ],
                             ),
@@ -75,7 +111,9 @@ class _ListBudayaState extends State<ListBudaya> {
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => DetailBudaya()));
+                                    builder: (context) => DetailBudaya(
+                                        listDataBudaya[index]['id'].toString(),
+                                        listDataBudaya[index])));
                           },
                           child: Text('Lihat'),
                         ),
